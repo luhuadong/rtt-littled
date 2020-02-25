@@ -102,6 +102,7 @@ void led_unregister(int ld)
     {
         if (led->tid)
         {
+            rt_pin_write(led->pin, !led->active_logic);
             rt_thread_delete(led->tid);
         }
         rt_slist_remove(&littled_list.head, node);
@@ -135,6 +136,8 @@ int led_mode(int ld, rt_uint32_t period, rt_uint32_t pulse, rt_uint32_t time, rt
 
     // send mailbox
     rt_mb_send(littled_mb, (rt_ubase_t)msg);
+
+    return RT_EOK;
 }
 
 static void led_task_entry(void *args)
