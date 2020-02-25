@@ -10,6 +10,7 @@
 
 #include <rtthread.h>
 #include <rtdevice.h>
+#include <board.h>
 #include "littled.h"
 
 #define LED1_PIN        GET_PIN(C, 7)
