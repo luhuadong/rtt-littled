@@ -15,9 +15,11 @@
 #define DBG_LVL DBG_INFO
 #include <rtdbg.h>
 
-#define LED_THREAD_PRIORITY         (RT_THREAD_PRIORITY_MAX - 1)
-#define LED_THREAD_STACK_SIZE       (512)
-#define LED_THREAD_TIMESLICE        (10)
+#define LED_THREAD_PRIORITY      (RT_THREAD_PRIORITY_MAX - 1)
+#define LED_THREAD_STACK_SIZE    (512)
+#define LED_THREAD_TIMESLICE     (10)
+
+#define MAX_MSGS                 (5)
 
 struct led_node
 {
@@ -53,8 +55,8 @@ struct littled_list_head
 };
 
 static struct littled_list_head littled_list;
-static rt_thread_t  littled_thread = RT_NULL;
-static rt_mailbox_t littled_mb = RT_NULL;
+static rt_thread_t littled_thread = RT_NULL;
+static rt_mq_t littled_mq = RT_NULL;
 
 int led_register(rt_base_t pin, rt_base_t active_logic)
 {
@@ -125,17 +127,17 @@ void led_unregister(int ld)
  */
 int led_mode(int ld, rt_uint32_t period, rt_uint32_t pulse, rt_uint32_t time, rt_uint32_t count)
 {
-    // pack msg
-    struct led_msg *msg = (struct led_msg*)rt_malloc(sizeof(struct led_msg));
+    /* pack msg */
+    struct led_msg msg;
 
-    msg->ld     = ld;
-    msg->period = period;
-    msg->pulse  = pulse;
-    msg->time   = time;
-    msg->count  = count;
+    msg.ld     = ld;
+    msg.period = period;
+    msg.pulse  = pulse;
+    msg.time   = time;
+    msg.count  = count;
 
-    // send mailbox
-    rt_mb_send(littled_mb, (rt_ubase_t)msg);
+    /* send message queue */
+    rt_mq_send(littled_mq, (void *)&msg, sizeof(msg));
 
     return RT_EOK;
 }
@@ -175,15 +177,15 @@ static void led_task_entry(void *args)
 
 static void littled_daemon_entry(void *args)
 {
-    struct led_msg *msg;
+    struct led_msg msg;
     char led_thread_name[8];
 
     while(1)
     {
-        /* Wait message from mailbox */
-        if (RT_EOK == rt_mb_recv(littled_mb, (rt_ubase_t *)&msg, RT_WAITING_FOREVER))
+        /* Wait message from queue */
+        if (RT_EOK == rt_mq_recv(littled_mq, (void *)&msg, sizeof(msg), RT_WAITING_FOREVER))
         {
-            LOG_D("littled recv mailbox");
+            LOG_D("littled recv message");
 
             rt_slist_t *node = RT_NULL;
             struct led_node *led = RT_NULL;
@@ -194,24 +196,21 @@ static void littled_daemon_entry(void *args)
             rt_slist_for_each(node, &littled_list.head)
             {
                 led = rt_slist_entry(node, struct led_node, list);
-                if (msg->ld == led->ld)
+                if (msg.ld == led->ld)
                     break;
             }
 
             if (node == RT_NULL)
             {
-                LOG_D("led node [%d] not yet registered", msg->ld);
-                rt_free(msg);
+                LOG_D("led node [%d] not yet registered", msg.ld);
                 continue;
             }
 
             /* Save message */
-            led->period = msg->period;
-            led->pulse  = msg->pulse;
-            led->time   = msg->time;
-            led->count  = msg->count;
-
-            rt_free(msg);
+            led->period = msg.period;
+            led->pulse  = msg.pulse;
+            led->time   = msg.time;
+            led->count  = msg.count;
 
             /* Preprocessing */
             if (led->tid)
@@ -275,9 +274,9 @@ static int littled_init(void)
     if (littled_list.lock == RT_NULL)
         goto __exit;
 
-    /* Create a mailbox for thread */
-    littled_mb = rt_mb_create("littled", 32, RT_IPC_FLAG_FIFO);
-    if (littled_mb == RT_NULL)
+    /* Create a message queue for thread */
+    littled_mq = rt_mq_create("littled", sizeof(struct led_msg), MAX_MSGS, RT_IPC_FLAG_FIFO);
+    if (littled_mq == RT_NULL)
         goto __exit;
 
     /* create the littled daemon thread */
@@ -293,8 +292,8 @@ __exit:
     if (littled_thread)
         rt_thread_delete(littled_thread);
 
-    if (littled_mb)
-        rt_mb_delete(littled_mb);
+    if (littled_mq)
+        rt_mq_delete(littled_mq);
 
     if (littled_list.lock)
         rt_mutex_delete(littled_list.lock);
