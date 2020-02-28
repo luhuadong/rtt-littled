@@ -22,7 +22,15 @@ littled 是一个基于链表的非常简单易用的 LED 控制软件包。
 
 
 
-### 1.2 目录结构
+### 1.2 软件架构
+
+![](./figures/littled_diagram.png)
+
+更多 >> <https://blog.csdn.net/lu_embedded/article/details/104565786>
+
+
+
+### 1.3 目录结构
 
 | 名称     | 说明       |
 | -------- | ---------- |
@@ -32,13 +40,13 @@ littled 是一个基于链表的非常简单易用的 LED 控制软件包。
 
 
 
-### 1.3 许可证
+### 1.4 许可证
 
 littled 软件包遵循 Apache license v2.0 许可，详见 `LICENSE` 文件。
 
 
 
-### 1.4 依赖
+### 1.5 依赖
 
 - RT-Thread 3.0+
 - 动态内存管理模块
