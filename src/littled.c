@@ -11,8 +11,8 @@
 #include <rtthread.h>
 #include <rtdevice.h>
 
-#define DBG_TAG "pkg.littled"
-#define DBG_LVL DBG_INFO
+#define DBG_TAG                  "pkg.littled"
+#define DBG_LVL                  DBG_LOG
 #include <rtdbg.h>
 
 #define LED_THREAD_PRIORITY      (RT_THREAD_PRIORITY_MAX - 1)
