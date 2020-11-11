@@ -76,7 +76,7 @@ int led_register(rt_base_t pin, rt_base_t active_logic)
     rt_slist_append(&littled_list.head, &new_led->list);
     new_led->ld = littled_list.ld_max++;
 
-    LOG_D("littled [%d] register, len = %d\n", new_led->ld, rt_slist_len(&littled_list.head));
+    LOG_D("littled [%d] register, len = %d", new_led->ld, rt_slist_len(&littled_list.head));
 
     rt_mutex_release(littled_list.lock);
 
