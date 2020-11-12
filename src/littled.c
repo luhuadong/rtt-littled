@@ -12,7 +12,11 @@
 #include <rtdevice.h>
 
 #define DBG_TAG                  "pkg.littled"
+#ifdef PKG_USING_LITTLED_DEBUG
 #define DBG_LVL                  DBG_LOG
+#else
+#define DBG_LVL                  DBG_ERROR
+#endif
 #include <rtdbg.h>
 
 #define LED_THREAD_PRIORITY      (RT_THREAD_PRIORITY_MAX - 1)
